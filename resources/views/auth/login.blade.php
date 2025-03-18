@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Hotel Project</title>
+
 </head>
 <body>
 
@@ -66,7 +68,7 @@
     display: block; /* Ошибки будут отображаться на отдельной строке */
     font-family: Arial, sans-serif; /* Простой шрифт для читаемости */
 }
-input {
+/* input {
     border: 1px solid black;
     border-radius: 15px;
     padding: 5px;
@@ -86,5 +88,5 @@ button {
     margin: 10px;
     box-shadow: 3px -3px 5px gray;
     border-radius: 15px;
-}
+} */
 </style>

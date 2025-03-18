@@ -34,12 +34,6 @@ class UserController extends Controller
             $user = User::find($id);
         }
         $user->load('roles');
-
-        
-        if (request()->expectsJson()) {
-            return response()->json($user);
-        }
-        // return view('users.show')->with('user', $user);
         return response()->json($user);
     }
 
@@ -60,7 +54,11 @@ class UserController extends Controller
         $imageName = $this->storeImage($request);
         $user->update(['image' => $imageName]);
 
-        return response()->json($user);
+        if (request()->expectsJson()) {
+            return response()->json($user);
+        }
+
+        return view('hello');
     }
     private function storeImage(Request $request)
     {

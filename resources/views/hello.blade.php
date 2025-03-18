@@ -1,43 +1,28 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Hotel</title>
-</head>
-<body>
+
 @extends('start')
 
 @section('content')
-    <div class="grid1">
-        <span class="flex_center">
-            laravel project.
-        </span>
-        <div class="flex_center">
-            <img src="{{ asset('storage/php.png') }}" alt="pulp fiction">
+    <div class="home_bubble">
+        <div class="grid1">
+            <p class="flex_start">
+                laravel project.
+            </p>
+            <p class="flex_center">
+                This is a hotel management system.
+            </p>
+            <p class="flex_center" id="secondaryText">
+                Thank god human invented sanctum so i can use this app as an api easily.
+            </p>
+        </div>
+        
+        <div class="flex_end">
+            <img class="main_page_img" src="{{ asset('storage/php.png') }}" alt="pulp fiction">
         </div>
     </div>
 @endsection
-</body>
-</html>
 
 <style>
-.flex_center {
-    display: flex;
-    justify-content: center;
+#secondaryText {
+    color: rgba(0, 0, 0, 0.35);
 }
-.grid1 {
-    display: grid;
-}
-span {
-    font-size: 30px;
-    font-weight: 700;
-    font-family: Arial, Helvetica, sans-serif;
-}
-img {
-    max-width: 900px;
-    border-radius: 5px;
-}
-
 </style>

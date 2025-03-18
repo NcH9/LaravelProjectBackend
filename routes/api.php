@@ -10,17 +10,14 @@ use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\RoomController;
 
-// Route::get('/', function () {
-//     return view('welcome');
-// });
-// Route::get('user', [UserController::class, 'index']);
+
 Route::get('/', function () {
     return view('hello');
 });
 Route::get('/profile', [AuthController::class, 'index'])->name('profile');
 Route::post('/profile/updatePicture', [UserController::class, 'updatePicture'])->name('profile.updatePicture');
 Route::resource('rooms', RoomController::class);
-// Route::resource('reservations', ReservationController::class);
+
 Route::post('/reservations/confirm', [ReservationController::class, 'confirm'])
 ->middleware('auth:sanctum');
 
@@ -54,6 +51,3 @@ Route::get('/user', function (Request $request) {
 Route::post('/orderSpecific', [OrderController::class, 'show'])->middleware('auth:sanctum');
 Route::post('/orders', [OrderController::class, 'store'])->middleware('auth:sanctum');
 
-// Route::get('/rooms', function (Request $request) {
-//     return $request->room();
-// })->middleware('auth:sanctum');

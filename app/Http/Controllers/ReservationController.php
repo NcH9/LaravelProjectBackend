@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ReservationRequest;
 use App\Jobs\GeneratePdfReport;
 use App\Jobs\SendNewReservationsInfo;
 use App\Jobs\SendUpdateReservationsInfo;
@@ -17,6 +18,7 @@ use Mail;
 use Storage;
 use Validator;
 use View;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 
 class ReservationController extends Controller
 {
@@ -41,16 +43,14 @@ class ReservationController extends Controller
             $direction = 'asc';
         }
 
-        if (Auth::user()->hasRole('admin') || Auth::user()->hasRole('manager')) {
-            $reservations = Reservation::with('user')->orderBy($sortBy, $direction)->paginate(10);
-            
-        } else {
-            $reservations = Reservation::with('user')
-                ->where('user_id', Auth::user()->id)
-                ->orderBy($sortBy, $direction)
-                ->paginate(10);
-        }
-        // $reservations = Reservation::all();
+        $reservations = (Auth::user()->hasRole('admin') || Auth::user()->hasRole('manager')) 
+        ? Reservation::with('user')
+            ->orderBy($sortBy, $direction)->paginate(10) 
+        : Reservation::with('user')
+            ->where('user_id', Auth::user()->id)
+            ->orderBy($sortBy, $direction)
+            ->paginate(10);
+
         if ($request->expectsJson()) {
 
             return response()->json([
@@ -80,18 +80,36 @@ class ReservationController extends Controller
             'start_date' => 'required|date|before_or_equal:today',
             'end_date' => 'required|date|after_or_equal:start_date|before_or_equal:today',
         ]);
-        GeneratePdfReport::dispatch($validated);
-        return response()->json(['message' => 'Report is being generated']);
+
+        if ($request->expectsJson()) {
+            GeneratePdfReport::dispatch($validated);
+            return response()->json(['message' => 'Report is being generated']);
+        }
+
+        $reservations = Reservation::
+            where('reservation_start', '>=', $validated['start_date'])
+            ->where('reservation_end', '<=', $validated['end_date'])
+            ->get();
+
+        $pdf = PDF::loadView('reports.reservations', ['reservations' => $reservations]);
+
+        $path = 'reports/reservations_report_' . now()->format('d.m.Y_H:i:s') . '.pdf';
+        Storage::disk('public')->put($path, $pdf->output());
+
+        $allReports = Storage::disk('public')->files('reports');
+        return view('reports.list')->with('reports', $allReports);
     }
     public function showReports(Request $request) {
         if (Gate::denies('is-manager-or-admin')) {
             abort(403);
         }
+
         $request->validate([
             'term' => 'nullable|string|max:255',
             'date_from' => 'nullable|date',
             'date_to' => 'nullable|date|after_or_equal:date_from',
         ]);
+        
         $dateFrom = $request->input('date_from');
         $dateTo = $request->input('date_to');
         $search = $request->input('term');
@@ -100,7 +118,6 @@ class ReservationController extends Controller
             $fileName = basename($file);
         
             preg_match('/(\d{2}\.\d{2}\.\d{4}_\d{2}:\d{2}:\d{2})/', $fileName, $matches);
-            // dd($matches[1]);
             $createdAt = isset($matches[1])
                 ? \Carbon\Carbon::createFromFormat('d.m.Y_H:i:s', $matches[1])
                 : null;
@@ -111,10 +128,6 @@ class ReservationController extends Controller
                 'createdAt' => $createdAt,
             ];
         }, $allReports);
-        // dd($reportLinks);
-        // if ($reportLinks == null) {
-        //     return view('reports.list')->with('reports', []);
-        // }
         if ($dateFrom != null && $dateTo != null) {
             $reportLinks = array_filter($reportLinks, function ($report) use ($dateFrom, $dateTo) {
                 $createdAt = $report['createdAt'];
@@ -143,8 +156,10 @@ class ReservationController extends Controller
     }
     public function create() {
         if (!Auth::check()) {
+            if (request()->expectsJson()) {
+                return response()->json(['error' => 'User is not authenticated'], 401);
+            }
             return redirect()->route('login');
-            // return response()->json(['error' => 'User is not authenticated'], 401);
         }
 
         return view('reservations.create');
@@ -157,17 +172,15 @@ class ReservationController extends Controller
         if (!Auth::check()) {
 
             return redirect()->route('login');
-            // return response()->json(['error' => 'User is not authenticated'], 401);
         }
         $data = $request->all();
         $data['user_id'] = Auth::id();
 
         if (!isset($data['room_id']) || $data['room_id'] == 0) {
-            if (isset($data['reservation_start']) && isset($data['reservation_end'])) {
-                $data['room_id'] = $this->findRoom($data['reservation_start'], $data['reservation_end']);
-            } else {
-                $data['room_id'] = 1;
-            }
+            $data['room_id'] = 
+                isset($data['reservation_start']) && isset($data['reservation_end']) 
+                ? $this->findRoom($data['reservation_start'], $data['reservation_end'])
+                : 1;
         }
 
         $validated = Validator::make($data, [
@@ -177,12 +190,19 @@ class ReservationController extends Controller
             'user_id' => 'required|integer|exists:users,id',
             'price' => 'nullable|numeric',
         ])->validate();
+
         $validated['price'] = $this->countPrice(
             $validated['room_id'], 
             $validated['reservation_start'], 
             $validated['reservation_end'])['price'];
+            
         if (!$this->checkAvailability($validated['room_id'], $validated['reservation_start'], $validated['reservation_end'])) {
-            return response()->json(['error' => 'Room is unavailable for booking for this period'], 400);
+            
+            if (request()->expectsJson()) {
+                return response()->json(['error' => 'Room is unavailable for booking for this period'], 400);
+            }
+            
+            return view('reservations.unavailable');
         }
 
         $reservation = Reservation::create($validated);
@@ -190,7 +210,7 @@ class ReservationController extends Controller
         if (request()->expectsJson()) {
             return response()->json($reservation, 201);
         }
-        return response()->json($reservation, 200);
+        return view('reservations.show')->with('reservation', $reservation);
     }
     private function findRoom($startDate, $endDate) {
 
@@ -228,12 +248,10 @@ class ReservationController extends Controller
         $data['user_id'] = Auth::id();
 
         if (!isset($data['room_id']) || $data['room_id'] == 0) {
-            if (isset($data['reservation_start']) && isset($data['reservation_end'])) {
-                $data['room_id'] = $this->findRoom($data['reservation_start'], $data['reservation_end']);
-            }
-            else {
-                $data['room_id'] = 1;
-            }
+            $data['room_id'] = 
+                isset($data['reservation_start']) && isset($data['reservation_end'])
+                ? $this->findRoom($data['reservation_start'], $data['reservation_end'])
+                : 1;
         }
 
         $validated = Validator::make($data, [
@@ -244,7 +262,10 @@ class ReservationController extends Controller
         ])->validate();
 
         if (!$this->checkAvailability($validated['room_id'], $validated['reservation_start'], $validated['reservation_end'])) {
-            return response()->json(['error' => 'Room is unavailable for booking for this period'], 400);
+            if (request()->expectsJson()) {
+                return response()->json(['error' => 'Room is unavailable for booking for this period'], 400);
+            }
+            return view('reservations.unavailable');
         }
 
         $additionalData = $this->countPrice(
@@ -253,7 +274,7 @@ class ReservationController extends Controller
             $validated['reservation_end']
         );
 
-        $data = [
+        $reservation = [
             'room_id' => $validated['room_id'],
             'reservation_start' => $validated['reservation_start'],
             'reservation_end' => $validated['reservation_end'],
@@ -262,9 +283,9 @@ class ReservationController extends Controller
             'price' => $additionalData['price'],
         ];
         if (request()->expectsJson()) {
-            return response()->json($data);
+            return response()->json($reservation);
         }
-        return view('reservations.confirm', $data);
+        return view('reservations.confirm')->with('reservation', $reservation);
     }
     private function countPrice($room_id, $reservation_start, $reservation_end) {
         $defaultPrice = 500;
@@ -299,33 +320,35 @@ class ReservationController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(int $id)
+    public function show(Reservation $reservation)
     {
-        $reservation = Reservation::with('user')->find($id);
         if (Gate::denies('show-and-redact-reservation', $reservation)) {
             abort(403);
         }
+
         if (request()->expectsJson()) {
             return response()->json($reservation);
         }
+
         return view('reservations.show')->with('reservation', $reservation);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function confirmUpdate(Request $request, Reservation $reservation)
+    public function confirmUpdate(ReservationRequest $request, Reservation $reservation)
     {
         if (Gate::denies('show-and-redact-reservation', $reservation)) {
             abort(403);
         }
 
-        $validated = $request->validate([
-            'reservation_start' => 'required|date|after_or_equal:today',
-            'reservation_end' => 'required|date|after_or_equal:reservation_start',
-            'room_id' => 'required|integer|exists:rooms,id',
-            'price' => 'nullable|numeric',
-        ]);
+        // $validated = $request->validate([
+        //     'reservation_start' => 'required|date|after_or_equal:today',
+        //     'reservation_end' => 'required|date|after_or_equal:reservation_start',
+        //     'room_id' => 'required|integer|exists:rooms,id',
+        //     'price' => 'nullable|numeric',
+        // ]);
+        $validated = $request->validated();
 
         if (!$this->isRedactable(
             $reservation->id,
@@ -333,8 +356,11 @@ class ReservationController extends Controller
             $validated['reservation_start'],
             $validated['reservation_end']
         )) {
+            if (request()->expectsJson()) {
+                return response()->json(['error' => 'Room is unavailable for booking for this period'], 400);
+            }
+            return view('reservations.unavailable');
 
-            return response()->json(['error' => 'Room is unavailable for booking for this period'], 400);
         }
         $additionalData = $this->countPrice(
             $validated['room_id'],
@@ -382,7 +408,10 @@ class ReservationController extends Controller
             $validated['reservation_start'],
             $validated['reservation_end']
         )) {
-            return response()->json(['error' => 'Room is unavailable for booking for this period'], 400);
+            if (request()->expectsJson()) {
+                return response()->json(['error' => 'Room is unavailable for booking for this period'], 400);
+            }
+            return view('reservations.unavailable');
         }
 
         unset($validated['reservation_id']);

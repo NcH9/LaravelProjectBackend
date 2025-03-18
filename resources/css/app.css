@@ -1,3 +1,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@import './general.css';
+@import './bubbles.css';
+@import './forms.css';

@@ -1,0 +1,122 @@
+.bubble {
+    display: grid;
+    background-color: #fff;
+    border-radius: 25px;
+    padding: 50px;
+    margin: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    border: none;
+}
+
+.home_bubble {
+    background-color: #fff;
+    border-radius: 25px;
+    padding: 50px;
+    box-shadow: 1px 1px 1px 1px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: space-around;
+    place-items: center;
+}
+.home_bubble p {
+    font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+    font-weight: bold;
+
+    font-size: 35px;
+    margin: 10px;
+}
+
+#confirm_bubble {
+    display: grid;
+}
+#confirm_bubble p {
+    font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+    font-size: 25px;
+    margin: 10px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+#confirm_reservation_btn {
+    margin: 10px;
+
+}
+
+.reservation_bubble_link {
+    display: grid;
+    place-items: start;
+    margin: 10px;
+    padding: 15px;
+    background-color: #fff;
+    border-radius: 25px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+    border: none;
+}
+.reservation_bubble_link:hover {
+    background-color: rgba(166, 166, 166, 0.1);
+    box-shadow: 0 0 0;
+    transition: 0.3s;
+}
+
+.reservation_bubble {
+    display: grid;
+    place-items: start;
+    margin: 10px;
+    padding: 15px;
+    background-color: #fff;
+    border-radius: 25px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+    border: none;
+}
+.sort_bubble {
+    width: 80px;
+    display: grid;
+    place-items: center;
+    gap: 0px;
+    padding: 5px;
+    margin: 2px;
+    background-color: #fff;
+    border-radius: 5px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.nav_bubble {
+    margin: 15px 0 15px 15px;
+    border-radius:  25px 0 0 25px;
+    display: flex;
+    justify-content: space-between;
+    place-items: center;
+    padding: 15px;
+    background-color: #fff;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+}
+.nav_bubble a {
+    padding: 10px;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    text-decoration: none;
+    color: rgb(54, 166, 54);
+    border-radius: 25px 25px 0 25px;
+}
+.nav_bubble a:hover {
+    background-color: rgba(26, 166, 26, 0.1);
+    color: black;
+    transition: 0.5s;
+}
+
+.room_bubble {
+    display: grid;
+    place-items: center;
+    min-width: 70px;
+    min-height: 70px;
+    margin: 10px;
+    padding: 15px;
+    background-color: #fff;
+    border-radius: 25px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+    border: none;
+}
+
+.room_bubble:hover {
+    background-color: rgba(166, 166, 166, 0.1);
+    box-shadow: 0 0 0;
+    transition: 0.3s;
+}

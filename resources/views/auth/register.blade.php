@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Register</title>  
+    <title>Hotel Project</title>
+
 </head>
 <body>
     
@@ -75,37 +76,5 @@
 </body>
 </html>
 <style>
-.flex_center {
-    display: flex;
-    justify-content: center;
-    place-items: center;
-}
-.error {
-    color: red;
-    font-size: 14px;
-    margin-top: 5px;
-    display: block;
-    font-family: Arial, sans-serif;
-}
-input {
-    border: 1px solid black;
-    border-radius: 15px;
-    padding: 5px;
-    margin: 5px;
-    background-color: rgb(230, 249, 253);
-}
-span {
-    display: flex;
-    justify-content: center;
-    place-items: center;
-    font-family: Georgia, 'Times New Roman', Times, serif;
-    font-size: 20px;
-}
-button {
-    background-color: rgba(255, 162, 0, 0.75);
-    padding: 10px;
-    margin: 10px;
-    box-shadow: 3px -3px 5px gray;
-    border-radius: 15px;
-}
+
 </style>

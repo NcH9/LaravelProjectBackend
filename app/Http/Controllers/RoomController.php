@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Auth;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use App\Models\Room;
@@ -11,12 +12,35 @@ class RoomController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $rooms = Room::with('status')->orderBy('floor')->get();
-        $groupedRooms = $rooms->groupBy('floor');
+        $rooms = Room::with('status')->with('reservations')->orderBy('floor')->get();
         $this->updateRoomStatus();
-        // dd($groupedRooms);
+
+        $start = $request->input('start', '');
+        $end = $request->input('end', '');
+
+        if ($start !== '' && $end !== '') {
+            $startDate = Carbon::parse($start);
+            $endDate = Carbon::parse($end);
+            foreach ($rooms as $room) {
+                $room->calculatedStatus = $room->reservations->filter(function ($reservation) use ($startDate, $endDate) {
+                    $reservationStart = Carbon::parse($reservation->reservation_start);
+                    $reservationEnd = Carbon::parse($reservation->reservation_end);
+                    return 
+                        $reservationStart->between($startDate, $endDate) || 
+                        $reservationEnd->between($startDate, $endDate) ||
+                        $startDate->between($reservationStart, $reservationEnd) ||
+                        $endDate->between($reservationStart, $reservationEnd);
+                })->count() > 0 ? 'Occupied' : 'Available';
+            }
+        } else {
+            foreach ($rooms as $room) {
+                $room->calculatedStatus = $room->status->name === 'occupied' ? 'Occupied' : 'Available';
+            }
+        }
+        $groupedRooms = $rooms->groupBy('floor');
+
         if (request()->expectsJson()) {
             return response()->json($groupedRooms);
         }
@@ -27,8 +51,8 @@ class RoomController extends Controller
         return $rooms;
     } 
     public static function getFloor($roomId):int {
-        $floor = Room::where('id', $roomId)->value('floor');
-        return $floor;
+        $room = Room::find($roomId);
+        return $room->floor;
     }
     /**
      * Store a newly created resource in storage.
@@ -46,10 +70,23 @@ class RoomController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(int $id)
+    public function show(Room $room)
     {
-        $room = Room::findOrFail($id);
-        return response()->json($room, 200);
+        $room->load('status');
+        $room->calculatedStatus = $room->status->name === 'occupied' ? 'Occupied' : 'Available';
+
+        if (Auth::user()->hasRole('admin') || Auth::user()->hasRole('manager')) {
+            $room->load('reservations');
+        } else {
+            $room->load(['reservations' => function ($query) {
+                $query->where('user_id', Auth::user()->id);
+            }]);
+        }
+
+        if (request()->expectsJson()) {
+            return response()->json($room);
+        }
+        return view('rooms.show')->with('room', $room);
     }
 
     /**
