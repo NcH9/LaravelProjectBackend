@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Hotel Project</title>
-
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
 </head>
 <body>
 @extends('start')
@@ -20,7 +20,7 @@
             <div class="grid1">
                 <div class="flex_start">
                     <span>Start of wished reservation</span>
-                    <input 
+                    <input
                         type="date"
                         name="reservation_start"
                         value="{{$reservation->reservation_start}}"
@@ -29,10 +29,10 @@
                 @error('reservation_start')
                     <span class="error">{{ $message }}</span>
                 @enderror
-                
+
                 <div class="flex_start">
                     <span>End of wished reservation</span>
-                    <input 
+                    <input
                         type="date"
                         name="reservation_end"
                         value="{{$reservation->reservation_end}}"
@@ -44,7 +44,7 @@
 
                 <div class="flex_start">
                     <span>Room №</span>
-                    <input 
+                    <input
                         type="number"
                         name="room_id"
                         id="room"
@@ -54,12 +54,12 @@
                 @error('room_id')
                     <span class="error">{{ $message }}</span>
                 @enderror
-            
+
                 <div class="flex_center">
                     <button type="submit">Update Reservation</button>
                 </div>
             </div>
-        </div>    
+        </div>
     </form>
 </div>
 

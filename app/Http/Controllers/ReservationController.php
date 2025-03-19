@@ -2,14 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\RoleEnum;
 use App\Http\Requests\ReservationRequest;
+use App\Http\Requests\Reservations\ReservationConfirmRequest;
+use App\Http\Requests\Reservations\ReservationIndexRequest;
+use App\Http\Requests\Reservations\ReservationsShowReports;
+use App\Http\Requests\Reservations\ReservationStoreRequest;
 use App\Jobs\GeneratePdfReport;
 use App\Jobs\SendNewReservationsInfo;
 use App\Jobs\SendUpdateReservationsInfo;
 use App\Mail\ReservationCreated;
 use App\Mail\ReservationUpdated;
-use Auth;
-use DateTime;
+use App\Services\ReservationService;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Auth;
 use Gate;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
@@ -22,74 +28,47 @@ use Barryvdh\DomPDF\Facade\Pdf as PDF;
 
 class ReservationController extends Controller
 {
+    public function __construct(
+        protected ReservationService $reservationService,
+    ) {}
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+    public function index(ReservationIndexRequest $request):mixed
     {
         if (!$request->expectsJson() && !Auth::check()) {
 
             return redirect()->route('login');
         }
+        $data = $request->validated();
+        $user = Auth::user();
+        $userId = Auth::id();
 
-        $sortBy = $request->input('sort_by', 'id');
-        $direction = $request->input('direction', 'asc');
-        $allowedSorts = ['id', 'reservation_start', 'reservation_end', 'room_id', 'user_id'];
+        $reservations = $user->hasRole(RoleEnum::ADMIN) || $user->hasRole(RoleEnum::MANAGER)
+            ? $this->reservationService->getAllReservations($data)
+            : $this->reservationService->getReservationsForUser($userId, $data);
 
-        if (!in_array($sortBy, $allowedSorts)) {
-            $sortBy = 'id';
-        }
-        if ($direction != 'asc' && $direction != 'desc') {
-            $direction = 'asc';
-        }
-
-        $reservations = (Auth::user()->hasRole('admin') || Auth::user()->hasRole('manager')) 
-        ? Reservation::with('user')
-            ->orderBy($sortBy, $direction)->paginate(10) 
-        : Reservation::with('user')
-            ->where('user_id', Auth::user()->id)
-            ->orderBy($sortBy, $direction)
-            ->paginate(10);
-
-        if ($request->expectsJson()) {
-
-            return response()->json([
+        return $request->expectsJson()
+            ? response()->json([
                 'data' => $reservations->items(),
-                'meta' => [
-                    'current_page' => $reservations->currentPage(),
-                    'total_pages' => $reservations->lastPage(),
-                    'total_items' => $reservations->total(),
-                ],
-                'links' => [
-                    'next' => $reservations->nextPageUrl(),
-                    'prev' => $reservations->previousPageUrl(),
-                ],
-                'sort' => [
-                    'sort_by' => $sortBy,
-                    'direction' => $direction,
-                ],
-            ]);
-        }
-        return view('reservations.index')->with('reservations', $reservations);
+                'meta' => Arr::only($reservations->items(), [
+                    'current_page', 'last_page', 'total', 'per_page', 'next_page_url', 'prev_page_url',
+                ])
+            ])
+            : view('reservations.index')->with('reservations', $reservations);
     }
-    public function generateReport(Request $request) {
+    public function generateReport(ReservationStoreRequest $request) {
         if (Gate::denies('is-manager-or-admin')) {
             abort(403);
         }
-        $validated = $request->validate([
-            'start_date' => 'required|date|before_or_equal:today',
-            'end_date' => 'required|date|after_or_equal:start_date|before_or_equal:today',
-        ]);
+        $validated = $request->validated();
 
         if ($request->expectsJson()) {
             GeneratePdfReport::dispatch($validated);
             return response()->json(['message' => 'Report is being generated']);
         }
 
-        $reservations = Reservation::
-            where('reservation_start', '>=', $validated['start_date'])
-            ->where('reservation_end', '<=', $validated['end_date'])
-            ->get();
+        $reservations = $this->reservationService->getReservationsBetweenDates($validated['reservation_start'], $validated['reservation_end']);
 
         $pdf = PDF::loadView('reports.reservations', ['reservations' => $reservations]);
 
@@ -99,29 +78,23 @@ class ReservationController extends Controller
         $allReports = Storage::disk('public')->files('reports');
         return view('reports.list')->with('reports', $allReports);
     }
-    public function showReports(Request $request) {
+    public function showReports(ReservationsShowReports $request) {
         if (Gate::denies('is-manager-or-admin')) {
             abort(403);
         }
 
-        $request->validate([
-            'term' => 'nullable|string|max:255',
-            'date_from' => 'nullable|date',
-            'date_to' => 'nullable|date|after_or_equal:date_from',
-        ]);
-        
         $dateFrom = $request->input('date_from');
         $dateTo = $request->input('date_to');
         $search = $request->input('term');
         $allReports = Storage::disk('public')->files('reports');
         $reportLinks = array_map(function ($file) {
             $fileName = basename($file);
-        
+
             preg_match('/(\d{2}\.\d{2}\.\d{4}_\d{2}:\d{2}:\d{2})/', $fileName, $matches);
             $createdAt = isset($matches[1])
                 ? \Carbon\Carbon::createFromFormat('d.m.Y_H:i:s', $matches[1])
                 : null;
-        
+
             return [
                 'name' => $fileName,
                 'url' => Storage::url($file),
@@ -131,7 +104,7 @@ class ReservationController extends Controller
         if ($dateFrom != null && $dateTo != null) {
             $reportLinks = array_filter($reportLinks, function ($report) use ($dateFrom, $dateTo) {
                 $createdAt = $report['createdAt'];
-        
+
                 if ($dateFrom && $createdAt->lt(\Carbon\Carbon::parse($dateFrom))) {
                     return false;
                 }
@@ -139,11 +112,11 @@ class ReservationController extends Controller
                 if ($dateTo && $createdAt->gt(\Carbon\Carbon::parse($dateTo))) {
                     return false;
                 }
-        
+
                 return true;
             });
         }
-        
+
         if ($search == null) {
             return view('reports.list')->with('reports', array_reverse($reportLinks));
         }
@@ -155,168 +128,47 @@ class ReservationController extends Controller
         return view('reports.list')->with('reports', $reports);
     }
     public function create() {
-        if (!Auth::check()) {
-            if (request()->expectsJson()) {
-                return response()->json(['error' => 'User is not authenticated'], 401);
-            }
-            return redirect()->route('login');
-        }
-
         return view('reservations.create');
     }
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(ReservationStoreRequest $request)
     {
-        if (!Auth::check()) {
+        $data = $this->reservationService->prepareData($request->validated());
 
-            return redirect()->route('login');
-        }
-        $data = $request->all();
-        $data['user_id'] = Auth::id();
-
-        if (!isset($data['room_id']) || $data['room_id'] == 0) {
-            $data['room_id'] = 
-                isset($data['reservation_start']) && isset($data['reservation_end']) 
-                ? $this->findRoom($data['reservation_start'], $data['reservation_end'])
-                : 1;
+        if (!$this->reservationService->checkAvailability($data)) {
+            return request()->expectsJson()
+                ? response()->json(['error' => 'Room is unavailable for booking for this period'], 400)
+                : view('reservations.unavailable');
         }
 
-        $validated = Validator::make($data, [
-            'reservation_start' => 'required|date|after_or_equal:today',
-            'reservation_end' => 'required|date|after_or_equal:reservation_start',
-            'room_id' => 'required|integer|exists:rooms,id',
-            'user_id' => 'required|integer|exists:users,id',
-            'price' => 'nullable|numeric',
-        ])->validate();
-
-        $validated['price'] = $this->countPrice(
-            $validated['room_id'], 
-            $validated['reservation_start'], 
-            $validated['reservation_end'])['price'];
-            
-        if (!$this->checkAvailability($validated['room_id'], $validated['reservation_start'], $validated['reservation_end'])) {
-            
-            if (request()->expectsJson()) {
-                return response()->json(['error' => 'Room is unavailable for booking for this period'], 400);
-            }
-            
-            return view('reservations.unavailable');
-        }
-
-        $reservation = Reservation::create($validated);
+        $reservation = $this->reservationService->createReservation($data);
         SendNewReservationsInfo::dispatch($reservation);
-        if (request()->expectsJson()) {
-            return response()->json($reservation, 201);
-        }
-        return view('reservations.show')->with('reservation', $reservation);
-    }
-    private function findRoom($startDate, $endDate) {
 
-        $reservations = Reservation::
-            where('reservation_end', '>=', $startDate)
-            ->where('reservation_start', '<=', $endDate)
-            ->pluck('room_id')->toArray();
-        $rooms = RoomController::getAll();
-        $suitableRooms = array_values(array_diff($rooms, $reservations));
-
-        return isset($suitableRooms[0]) ? $suitableRooms[0] : 1;
-    }
-    private function checkAvailability(int $roomId, $startDate, $endDate):bool {
-        $existingReservations = [];
-        $existingReservations = Reservation::where('room_id', $roomId)->get();
-
-        if (count($existingReservations) == 0) {
-            return true;
-        }
-
-        foreach($existingReservations as $reservation) {
-            if ($startDate < $reservation->reservation_end && $endDate > $reservation->reservation_start) {
-                return false; 
-            }
-        }
-
-        return true;
-    }
-    public function confirm(Request $request) {
-        
-        if (!Auth::check()) {
-            return response()->json(['error' => 'User is not authenticated'], 401);
-        }
-        $data = $request->all();
-        $data['user_id'] = Auth::id();
-
-        if (!isset($data['room_id']) || $data['room_id'] == 0) {
-            $data['room_id'] = 
-                isset($data['reservation_start']) && isset($data['reservation_end'])
-                ? $this->findRoom($data['reservation_start'], $data['reservation_end'])
-                : 1;
-        }
-
-        $validated = Validator::make($data, [
-            'reservation_start' => 'required|date|after_or_equal:today',
-            'reservation_end' => 'required|date|after_or_equal:reservation_start',
-            'room_id' => 'required|integer|exists:rooms,id',
-            'user_id' => 'required|integer|exists:users,id',
-        ])->validate();
-
-        if (!$this->checkAvailability($validated['room_id'], $validated['reservation_start'], $validated['reservation_end'])) {
-            if (request()->expectsJson()) {
-                return response()->json(['error' => 'Room is unavailable for booking for this period'], 400);
-            }
-            return view('reservations.unavailable');
-        }
-
-        $additionalData = $this->countPrice(
-            $validated['room_id'],
-            $validated['reservation_start'],
-            $validated['reservation_end']
-        );
-
-        $reservation = [
-            'room_id' => $validated['room_id'],
-            'reservation_start' => $validated['reservation_start'],
-            'reservation_end' => $validated['reservation_end'],
-            'floor' => $additionalData['floor'],
-            'days_amount' => $additionalData['days_amount'],
-            'price' => $additionalData['price'],
-        ];
-        if (request()->expectsJson()) {
-            return response()->json($reservation);
-        }
-        return view('reservations.confirm')->with('reservation', $reservation);
-    }
-    private function countPrice($room_id, $reservation_start, $reservation_end) {
-        $defaultPrice = 500;
-        $floor = RoomController::getFloor($room_id);
-
-        $startDate = new DateTime($reservation_start);
-        $endDate = new DateTime($reservation_end);
-        $daysAmount = $startDate->diff($endDate)->days;
-
-        $startDate = $startDate->format('Y-m-d');
-        $endDate = $endDate->format('Y-m-d');
-
-        // mp - multiplier
-        $daysMp = $daysAmount >= 14 ? 0.9 : 1;
-        $floorMp = ($floor - 1) * 0.25;
-
-        $price = ($defaultPrice * $daysAmount) * (1 + $floorMp) * $daysMp;
-        if ($price == 0) {
-            $price = 500;
-        }
-
-        return [
-            'floor' => $floor,
-            'price' => $price, 
-            'days_amount' => $daysAmount
-        ];
+        return request()->expectsJson()
+            ? response()->json($reservation, 201)
+            : view('reservations.show')->with('reservation', $reservation);
     }
 
-    public function showRequest(Request $request) {
-        return dump($request);
+    public function confirm(ReservationConfirmRequest $request) {
+        $data = $this->reservationService->prepareData($request->validated());
+
+        if (!$this->reservationService->checkAvailability($data)) {
+            return request()->expectsJson()
+                ? response()->json(['error' => 'Room is unavailable for booking for this period'], 400)
+                : view('reservations.unavailable');
+        }
+
+        $data['floor'] = $this->reservationService->getFloor($data['room_id']);
+        $data['days_amount'] = $this->reservationService->getDaysAmount($data['reservation_start'], $data['reservation_end']);
+
+        return request()->expectsJson()
+            ? response()->json($data)
+            : view('reservations.confirm')->with('reservation', $data);
     }
+
+
     /**
      * Display the specified resource.
      */
@@ -326,11 +178,9 @@ class ReservationController extends Controller
             abort(403);
         }
 
-        if (request()->expectsJson()) {
-            return response()->json($reservation);
-        }
-
-        return view('reservations.show')->with('reservation', $reservation);
+        return request()->expectsJson()
+            ? response()->json($reservation)
+            : view('reservations.show')->with('reservation', $reservation);
     }
 
     /**
@@ -342,85 +192,38 @@ class ReservationController extends Controller
             abort(403);
         }
 
-        // $validated = $request->validate([
-        //     'reservation_start' => 'required|date|after_or_equal:today',
-        //     'reservation_end' => 'required|date|after_or_equal:reservation_start',
-        //     'room_id' => 'required|integer|exists:rooms,id',
-        //     'price' => 'nullable|numeric',
-        // ]);
-        $validated = $request->validated();
+        $data = $this->reservationService->prepareDataForUpdate($request->validated());
 
-        if (!$this->isRedactable(
-            $reservation->id,
-            $validated['room_id'],
-            $validated['reservation_start'],
-            $validated['reservation_end']
-        )) {
-            if (request()->expectsJson()) {
-                return response()->json(['error' => 'Room is unavailable for booking for this period'], 400);
-            }
-            return view('reservations.unavailable');
-
+        if (!$this->reservationService->isRedactable($reservation->id, $data)) {
+            return request()->expectsJson()
+                ? response()->json(['error' => 'Room is unavailable for booking for this period'], 400)
+                : view('reservations.unavailable');
         }
-        $additionalData = $this->countPrice(
-            $validated['room_id'],
-            $validated['reservation_start'],
-            $validated['reservation_end']
-        );
-        $validated['id'] = $reservation->id;
-        $validated['price'] = $additionalData['price'];
-        $validated['floor'] = $additionalData['floor'];
-        $validated['days_amount'] = $additionalData['days_amount'];
 
-        unset($validated['reservation_id']);
-
-        if (request()->expectsJson()) {
-            return response()->json($validated);
-        }
-        return view('reservations.confirmUpdate')->with('reservation', $validated);
+        return request()->expectsJson()
+            ? response()->json($data)
+            : view('reservations.confirmUpdate')->with('reservation', $data);
     }
-    public function update(Request $request, Reservation $reservation)
+    public function update(ReservationStoreRequest $request, Reservation $reservation)
     {
         if (Gate::denies('show-and-redact-reservation', $reservation)) {
             abort(403);
         }
 
-        $validated = $request->validate([
-            'reservation_start' => 'required|date|after_or_equal:today',
-            'reservation_end' => 'required|date|after_or_equal:reservation_start',
-            'room_id' => 'required|integer|exists:rooms,id',
-            'price' => 'nullable|numeric',
-        ]);
-        if (!isset($validated['price']) || $validated['price'] == 0) {
-            $additionalData = $this->countPrice(
-                $validated['room_id'],
-                $validated['reservation_start'],
-                $validated['reservation_end']
-            );
-            $validated['price'] = $additionalData['price'];
-            $validated['floor'] = $additionalData['floor'];
-            $validated['days_amount'] = $additionalData['days_amount'];
+        $data = $this->reservationService->prepareDataForUpdate($request->validated());
+
+        if (!$this->reservationService->isRedactable($reservation->id, $data)) {
+            return request()->expectsJson()
+                ? response()->json(['error' => 'Room is unavailable for booking for this period'], 400)
+                : view('reservations.unavailable');
         }
 
-        if (!$this->isRedactable(
-            $reservation->id,
-            $validated['room_id'],
-            $validated['reservation_start'],
-            $validated['reservation_end']
-        )) {
-            if (request()->expectsJson()) {
-                return response()->json(['error' => 'Room is unavailable for booking for this period'], 400);
-            }
-            return view('reservations.unavailable');
-        }
-
-        unset($validated['reservation_id']);
-        $reservation->update($validated);
+        $reservation->update($data);
         SendUpdateReservationsInfo::dispatch($reservation);
-        if (request()->expectsJson()) {
-            return response()->json($reservation);
-        }
-        return view('reservations.show')->with('reservation', $reservation);
+
+        return request()->expectsJson()
+            ? response()->json($reservation)
+            : view('reservations.show')->with('reservation', $reservation);
     }
     public function edit(Reservation $reservation) {
         if (Gate::denies('show-and-redact-reservation', $reservation)) {
@@ -428,24 +231,6 @@ class ReservationController extends Controller
         }
 
         return view('reservations.update')->with('reservation', $reservation);
-    }
-    private function isRedactable(int $reservationId, int $roomId, $startDate, $endDate) {
-
-        $existingReservations = Reservation::where('room_id', $roomId)
-        ->where('id', '!=', $reservationId)
-        ->get();
-
-        if ($existingReservations->isEmpty()) {
-            return true;
-        }
-
-        foreach($existingReservations as $existingReservation) {
-            if ($startDate < $existingReservation->reservation_end && $endDate > $existingReservation->reservation_start) {
-                return false; 
-            }
-        }
-
-        return true;
     }
     /**
      * Remove the specified resource from storage.
@@ -455,9 +240,11 @@ class ReservationController extends Controller
         if (Gate::denies('show-and-redact-reservation', $reservation)) {
             abort(403);
         }
-        $reservation->delete();
-        // return response()->json(['message' => 'Reservation deleted successfully']);
 
-        return redirect()->route('reservations.index');
+        $reservation->delete();
+
+        return request()->expectsJson()
+            ? response()->json(['message' => 'Reservation deleted successfully'])
+            : redirect()->route('reservations.index');
     }
 }

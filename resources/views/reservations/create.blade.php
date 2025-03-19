@@ -19,7 +19,7 @@
             <div class="grid1">
                 <div class="flex_start">
                     <span>Start of wished reservation</span>
-                    <input 
+                    <input
                         type="date"
                         name="reservation_start"
                     >
@@ -27,10 +27,10 @@
                 @error('reservation_start')
                     <span class="error">{{ $message }}</span>
                 @enderror
-                
+
                 <div class="flex_start">
                     <span>End of wished reservation</span>
-                    <input 
+                    <input
                         type="date"
                         name="reservation_end"
                     >
@@ -41,7 +41,7 @@
 
                 <div class="flex_start">
                     <span>Room №</span>
-                    <input 
+                    <input
                         type="number"
                         name="room_id"
                         id="room"
@@ -53,31 +53,28 @@
 
                 <div class="flex_center">
                     <span>choose the room for me</span>
-                    <input 
+                    <input
                         type="checkbox"
                         name="choice"
                         id="choice"
                         onchange="choiceChange()"
                     >
                 </div>
-                
-            
+
+
                 <div class="flex_center">
                     <button type="submit">Reserve Room</button>
                 </div>
             </div>
         </div>
-        
+
     </form>
 </div>
 
 @endsection
 </body>
 </html>
-
-<style>
-
-</style>
+<link rel="stylesheet" href="{{ asset('css/app.css') }}">
 
 <script>
     function choiceChange() {

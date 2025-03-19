@@ -10,7 +10,7 @@
                     <span>Check out when rooms are available</span>
                     <button onclick="showForm()" id="showFormBtn">+</button>
                 </div>
-                <form action="{{route('rooms.index')}}" 
+                <form action="{{route('rooms.index')}}"
                     id="look_occupied_rooms_form"
                     method="GET"
                 >
@@ -63,6 +63,8 @@ function showForm() {
     }
 }
 </script>
+
+<link rel="stylesheet" href="{{ asset('css/app.css') }}">
 <style>
 #showFormBtn {
     display: flex;

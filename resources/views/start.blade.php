@@ -5,18 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Hotel Project</title>
-    @vite('../resources/css/forms.css')
-    @vite('../resources/css/general.css')
-    @vite('../resources/css/bubbles.css')
-    {{-- @vite('../resources/css/app.css') --}}
-    {{-- <link rel="stylesheet" href="{{asset('css/app.css')}}"> --}}
-    {{-- <link rel="stylesheet" href="{{asset('css/forms.css')}}"> --}}
 </head>
 <body>
 
     <header>
         <div class="nav_bubble">
-            
+
             <div class="flex_center">
 
                 <a href="{{route('home')}}">Home</a>
@@ -24,7 +18,7 @@
                     <a href="{{route('reservations.index')}}">Reservations</a>
                 @endauth
 
-                @can('create reservations') 
+                @can('create reservations')
                     <a href="{{route('reservations.create')}}">Create reservation</a>
                 @endcan
 
@@ -33,7 +27,7 @@
                         <a href="{{route('reports.list')}}">Reports</a>
                     @endif
                 @endauth
-                
+
                 <a href="{{route('rooms.index')}}">Rooms</a>
 
             </div>
@@ -60,7 +54,7 @@
 
         </div>
     </header>
-    
+
     <main>
         @yield('content')
     </main>
@@ -69,5 +63,5 @@
 
 
 
-<style>
-</style>
+<link rel="stylesheet" href="{{ asset('css/app.css') }}">
+
