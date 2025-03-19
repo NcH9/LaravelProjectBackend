@@ -8,8 +8,8 @@
         <p class="flex_center">
             <span>Reservation start on {{$reservation['reservation_start']}} and ends on {{$reservation['reservation_end']}}.</span>
         </p>
-        <p class="flex_center"> 
-            In total of <span class="green">{{$reservation['days_amount']}} days</span>, 
+        <p class="flex_center">
+            In total of <span class="green">{{$reservation['days_amount']}} days</span>,
             the price of this booking is <span class="green">{{$reservation['price']}} UAH</span>.
         </p>
         <p class="flex_center">
@@ -17,13 +17,13 @@
         </p>
     </div>
 
-    <form 
-        method="POST" 
+    <form
+        method="POST"
         action="{{route('reservations.update', ['reservation' => $reservation['id']]) }}"
         >
         @csrf
         @method('PUT')
-        
+
         <input type="hidden" name="reservation_start" value="{{ $reservation['reservation_start'] }}">
         <input type="hidden" name="reservation_end" value="{{ $reservation['reservation_end'] }}">
         <input type="hidden" name="room_id" value="{{ $reservation['room_id'] }}">
@@ -48,3 +48,5 @@
         </button>
     </div>
 @endsection
+
+<link rel="stylesheet" href="{{ asset('css/app.css') }}">

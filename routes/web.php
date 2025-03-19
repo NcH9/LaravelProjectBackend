@@ -24,18 +24,15 @@ Route::get('/reports', [ReservationController::class, 'showReports'])->name('rep
 
 // Reservation routes
 Route::resource('reservations', ReservationController::class);
-Route::post('/reservations/confirm', [ReservationController::class, 'confirm'])
-->name('reservations.confirm');
+Route::group(['prefix' => 'reservations', 'controller' => ReservationController::class], function () {
+    Route::post('/confirm', [ReservationController::class, 'confirm']);
 
-Route::post('/reservations/{reservation}/edit', [ReservationController::class, 'edit'])
-->name('reservations.edit');
+    Route::post('/{reservation}/edit', [ReservationController::class, 'edit']);
 
-Route::post('/reservations/generateReport', [ReservationController::class, 'generateReport'])
-->name('reservations.generateReport');
+    Route::post('/generateReport', [ReservationController::class, 'generateReport']);
+    Route::post('/{reservation}/confirmUpdate', [ReservationController::class, 'confirmUpdate']);
 
-Route::post('/reservations/{reservation}/confirmUpdate', [ReservationController::class, 'confirmUpdate'])
-->name('reservations.confirmUpdate');
+    Route::put('/{reservation}', [ReservationController::class, 'update']);
+});
 
-Route::put('/reservations/{reservation}', [ReservationController::class, 'update'])
-->name('reservations.update');
 

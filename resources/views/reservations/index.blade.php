@@ -6,6 +6,7 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Hotel Project</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}"
 </head>
 <body>
 @extends('start')
@@ -32,9 +33,9 @@
                         </div>
                         <button type="submit">Generate</button>
                     </form>
-                </div> 
-            </div> 
-        </div>  
+                </div>
+            </div>
+        </div>
     @endif
 
 
@@ -46,23 +47,23 @@
             @can('edit reservations')
                 <div class="sort_bubble">
                     <span>ID</span>
-                    <a href="{{route('reservations.index', ['sort_by' => 'id', 'direction' => 'asc'])}}" 
+                    <a href="{{route('reservations.index', ['sort_by' => 'id', 'direction' => 'asc'])}}"
                         class="sort"
                     >
                         ▲
                     </a>
-                    <a href="{{route('reservations.index', ['sort_by' => 'id', 'direction' => 'desc'])}}" 
+                    <a href="{{route('reservations.index', ['sort_by' => 'id', 'direction' => 'desc'])}}"
                         class="sort"
                     >
                         ▼
                     </a>
                 </div>
             @endcan
-                
+
             {{-- Start --}}
             <div class="sort_bubble">
                 <span>Start</span>
-                <a href="{{route('reservations.index', ['sort_by' => 'reservation_start', 'direction' => 'asc'])}}" 
+                <a href="{{route('reservations.index', ['sort_by' => 'reservation_start', 'direction' => 'asc'])}}"
                     class="sort"
                 >
                     ▲
@@ -73,47 +74,47 @@
                     ▼
                 </a>
             </div>
-            
+
             {{-- End --}}
             <div class="sort_bubble">
                 <span>End</span>
-                <a href="{{route('reservations.index', ['sort_by' => 'reservation_end', 'direction' => 'asc'])}}" 
+                <a href="{{route('reservations.index', ['sort_by' => 'reservation_end', 'direction' => 'asc'])}}"
                     class="sort"
                 >
                     ▲
                 </a>
-                <a href="{{route('reservations.index', ['sort_by' => 'reservation_end', 'direction' => 'desc'])}}" 
+                <a href="{{route('reservations.index', ['sort_by' => 'reservation_end', 'direction' => 'desc'])}}"
                     class="sort"
                 >
                     ▼
                 </a>
             </div>
-            
+
             {{-- Room --}}
             <div class="sort_bubble">
                 <span>Room</span>
-                <a href="{{route('reservations.index', ['sort_by' => 'room_id', 'direction' => 'asc'])}}" 
+                <a href="{{route('reservations.index', ['sort_by' => 'room_id', 'direction' => 'asc'])}}"
                     class="sort"
                 >
                     ▲
                 </a>
-                <a href="{{route('reservations.index', ['sort_by' => 'room_id', 'direction' => 'desc'])}}" 
+                <a href="{{route('reservations.index', ['sort_by' => 'room_id', 'direction' => 'desc'])}}"
                     class="sort"
                 >
                     ▼
                 </a>
             </div>
-            
+
             {{-- User --}}
             @if (auth()->user()->hasRole('admin') || auth()->user()->hasRole('manager'))
                 <div class="sort_bubble">
                     <span>User</span>
-                    <a href="{{route('reservations.index', ['sort_by' => 'user_id', 'direction' => 'asc'])}}" 
+                    <a href="{{route('reservations.index', ['sort_by' => 'user_id', 'direction' => 'asc'])}}"
                         class="sort"
                     >
                         ▲
                     </a>
-                    <a href="{{route('reservations.index', ['sort_by' => 'user_id', 'direction' => 'desc'])}}" 
+                    <a href="{{route('reservations.index', ['sort_by' => 'user_id', 'direction' => 'desc'])}}"
                         class="sort"
                     >
                         ▼
@@ -158,7 +159,7 @@
     <div class="flex_center">
         {{$reservations->appends(['sort_by' => request('sort_by'), 'direction' => request('direction')])->links()}}
     </div>
-    
+
 @endsection
 </body>
 </html>

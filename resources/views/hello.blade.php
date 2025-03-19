@@ -14,15 +14,11 @@
                 Thank god human invented sanctum so i can use this app as an api easily.
             </p>
         </div>
-        
+
         <div class="flex_end">
             <img class="main_page_img" src="{{ asset('storage/php.png') }}" alt="pulp fiction">
         </div>
     </div>
 @endsection
+<link rel="stylesheet" href="{{ asset('css/app.css') }}">
 
-<style>
-#secondaryText {
-    color: rgba(0, 0, 0, 0.35);
-}
-</style>
