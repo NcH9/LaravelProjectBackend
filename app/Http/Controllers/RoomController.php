@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use Auth;
+use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use App\Models\Room;
@@ -14,7 +14,7 @@ class RoomController extends Controller
      */
     public function index(Request $request)
     {
-        $rooms = Room::with('status')->with('reservations')->orderBy('floor')->get();
+        $rooms = Room::with('reservations')->orderBy('floor')->get();
         $this->updateRoomStatus();
 
         $start = $request->input('start', '');
@@ -27,8 +27,8 @@ class RoomController extends Controller
                 $room->calculatedStatus = $room->reservations->filter(function ($reservation) use ($startDate, $endDate) {
                     $reservationStart = Carbon::parse($reservation->reservation_start);
                     $reservationEnd = Carbon::parse($reservation->reservation_end);
-                    return 
-                        $reservationStart->between($startDate, $endDate) || 
+                    return
+                        $reservationStart->between($startDate, $endDate) ||
                         $reservationEnd->between($startDate, $endDate) ||
                         $startDate->between($reservationStart, $reservationEnd) ||
                         $endDate->between($reservationStart, $reservationEnd);
@@ -36,7 +36,7 @@ class RoomController extends Controller
             }
         } else {
             foreach ($rooms as $room) {
-                $room->calculatedStatus = $room->status->name === 'occupied' ? 'Occupied' : 'Available';
+                $room->calculatedStatus = $room->status === 'occupied' ? 'Occupied' : 'Available';
             }
         }
         $groupedRooms = $rooms->groupBy('floor');
@@ -49,7 +49,7 @@ class RoomController extends Controller
     public static function getAll() {
         $rooms = Room::pluck('id')->toArray();
         return $rooms;
-    } 
+    }
     public static function getFloor($roomId):int {
         $room = Room::find($roomId);
         return $room->floor;

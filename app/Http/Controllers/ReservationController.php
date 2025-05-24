@@ -11,19 +11,14 @@ use App\Http\Requests\Reservations\ReservationStoreRequest;
 use App\Jobs\GeneratePdfReport;
 use App\Jobs\SendNewReservationsInfo;
 use App\Jobs\SendUpdateReservationsInfo;
-use App\Mail\ReservationCreated;
-use App\Mail\ReservationUpdated;
 use App\Services\ReservationService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
-use Gate;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use App\Models\Reservation;
-use Mail;
-use Storage;
-use Validator;
-use View;
+use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
 
 class ReservationController extends Controller
@@ -36,10 +31,6 @@ class ReservationController extends Controller
      */
     public function index(ReservationIndexRequest $request):mixed
     {
-        if (!$request->expectsJson() && !Auth::check()) {
-
-            return redirect()->route('login');
-        }
         $data = $request->validated();
         $user = Auth::user();
         $userId = Auth::id();
@@ -51,13 +42,13 @@ class ReservationController extends Controller
         return $request->expectsJson()
             ? response()->json([
                 'data' => $reservations->items(),
-                'meta' => Arr::only($reservations->items(), [
+                'meta' => Arr::only($reservations->toArray(), [
                     'current_page', 'last_page', 'total', 'per_page', 'next_page_url', 'prev_page_url',
                 ])
             ])
             : view('reservations.index')->with('reservations', $reservations);
     }
-    public function generateReport(ReservationStoreRequest $request) {
+    public function generateReport(ReservationStoreRequest $request):mixed {
         if (Gate::denies('is-manager-or-admin')) {
             abort(403);
         }
@@ -152,6 +143,7 @@ class ReservationController extends Controller
     }
 
     public function confirm(ReservationConfirmRequest $request) {
+
         $data = $this->reservationService->prepareData($request->validated());
 
         if (!$this->reservationService->checkAvailability($data)) {
@@ -235,7 +227,7 @@ class ReservationController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Reservation $reservation)
+    public function destroy(Reservation $reservation):RedirectResponse|JsonResponse
     {
         if (Gate::denies('show-and-redact-reservation', $reservation)) {
             abort(403);

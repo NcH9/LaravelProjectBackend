@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Models\Room;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -17,10 +19,10 @@ class ReservationFactory extends Factory
     public function definition(): array
     {
         return [
-            //
-            'reservation_start' => $this->faker->dateTimeBetween('now', '+4 weeks')->format('Y-m-d'), 
+            'reservation_start' => $this->faker->dateTimeBetween('now', '+4 weeks')->format('Y-m-d'),
             'reservation_end' => $this->faker->dateTimeBetween('+4 weeks', '+8 weeks')->format('Y-m-d'),
-            'room_id' => $this->faker->numberBetween(1, 10),
+            'room_id' => Room::all()->random()->id,
+            'user_id' => User::all()->random()->id,
         ];
     }
 }
