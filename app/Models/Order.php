@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Order extends Model
 {
@@ -16,5 +17,9 @@ class Order extends Model
     public function reservations(): HasMany
     {
         return $this->hasMany(Reservation::class, 'reservation_id', 'id');
+    }
+    public function discounts(): belongsToMany
+    {
+        return $this->belongsToMany(Discount::class, 'order_discount', 'order_id', 'discount_id');
     }
 }
