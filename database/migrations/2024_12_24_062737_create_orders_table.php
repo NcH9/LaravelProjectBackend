@@ -13,10 +13,10 @@ return new class extends Migration
     {
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
-            $table->timestamps();
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            $table->foreignId('reservation_id')->constrained('reservations')->onDelete('cascade');
-            $table->decimal('price');
+            $table->foreignId('user_id')->constrained();
+            $table->foreignId('reservation_id')->constrained();
+            $table->decimal('price')->default(0);
+            $table->boolean('is_paid')->default(false);
         });
     }
 
