@@ -10,11 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Room extends Model
 {
     use HasFactory;
-    protected $fillable = ['status_id', 'floor'];
-    public function status():BelongsTo
-    {
-        return $this->belongsTo(StatusList::class, 'status_id', 'id');
-    }
+    protected $fillable = ['status', 'floor', 'number'];
     public function reservations():HasMany
     {
         return $this->hasMany(Reservation::class);

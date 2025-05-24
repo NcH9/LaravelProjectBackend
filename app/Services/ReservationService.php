@@ -13,10 +13,12 @@ use Illuminate\Support\Facades\Auth;
 class ReservationService
 {
     public function getAllReservations(array $data):LengthAwarePaginator {
-        return Reservation::with('user')->paginate($data['per_page']);
+        $perPage = $data['perPage'] ?? 10;
+        return Reservation::with('user')->paginate($perPage);
     }
     public function getReservationsForUser(int $userId, array $data):LengthAwarePaginator {
-        return Reservation::with('user')->where('user_id', $userId)->paginate($data['per_page']);
+        $perPage = $data['perPage'] ?? 10;
+        return Reservation::with('user')->where('user_id', $userId)->paginate($perPage);
     }
     public function findRoom($startDate, $endDate):Room|int {
         $reservations = Reservation::
@@ -56,7 +58,7 @@ class ReservationService
     }
     public function prepareData(array $data):array {
         $data['user_id'] = Auth::id();
-        $data['room_id'] = !isset($data['room_id'])
+        $data['room_id'] = !isset($data['room_id']) || $data['room_id'] === 0
             ? $this->findRoom($data['reservation_start'], $data['reservation_end'])
             : $data['room_id'];
         $data['price'] = $this->countPrice(
