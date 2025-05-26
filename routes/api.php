@@ -36,11 +36,8 @@ Route::controller(AuthController::class)->group(function () {
     Route::get('/getuser', 'getCredentialsWithToken')->middleware('auth:sanctum');
 });
 
-// ????
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
-
-Route::post('/orderSpecific', [OrderController::class, 'show'])->middleware('auth:sanctum');
-Route::post('/orders', [OrderController::class, 'store'])->middleware('auth:sanctum');
+Route::controller(OrderController::class)->prefix('orders')->middleware('auth:sanctum')->group(function () {
+    Route::post('/{order}/attach-discount', 'attachDiscount');
+    Route::post('/{order}/detach-discount', 'detachDiscount');
+});
 

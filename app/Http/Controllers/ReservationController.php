@@ -11,6 +11,7 @@ use App\Http\Requests\Reservations\ReservationStoreRequest;
 use App\Jobs\GeneratePdfReport;
 use App\Jobs\SendNewReservationsInfo;
 use App\Jobs\SendUpdateReservationsInfo;
+use App\Services\OrderService;
 use App\Services\ReservationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -25,6 +26,7 @@ class ReservationController extends Controller
 {
     public function __construct(
         protected ReservationService $reservationService,
+        protected OrderService $orderService,
     ) {}
     /**
      * Display a listing of the resource.
@@ -135,6 +137,7 @@ class ReservationController extends Controller
         }
 
         $reservation = $this->reservationService->createReservation($data);
+        $this->orderService->create($data);
         SendNewReservationsInfo::dispatch($reservation);
 
         return request()->expectsJson()
