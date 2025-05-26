@@ -2,30 +2,69 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\DiscountAttachRequest;
 use App\Models\Order;
-use Illuminate\Http\Request;
+use App\Models\User;
+use App\Services\AuthService;
+use App\Services\OrderService;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
 {
-    public function index() {
-        return Order::all();
+    public function __construct(
+        protected OrderService $orderService,
+        protected AuthService $authService,
+    ) {}
+    public function processPayment($request) {
+
     }
-    public function show(Request $request) {
-        $validated = $request->validate([
-            'room_id' => 'required|integer|exists:rooms,id',
-            'user_id' => 'required|integer|exists:users,id',
-        ]);
-        $order = Order::where('room_id', $validated['room_id'])
-        ->where('user_id', $validated['user_id'])->first();
-        
-        return response()->json($order);
+    public function attachDiscount(DiscountAttachRequest $request) {
+        $order = Order::find($request['order_id']);
+        $user = !empty($request['user_id']) ? User::find($request['user_id']) : Auth::user();
+        $discount = $request['discount_id'];
+
+        $this->authService->checkUserDiscount($user, $discount);
+
+        DB::beginTransaction();
+        try {
+            $order->discounts()->attach($discount);
+            $user->discounts()->detach($discount);
+            $this->orderService->updatePrice($order);
+            DB::commit();
+            $response = [
+                'order' => $order->load('discounts'),
+                'user_discounts' => $user->discounts()->get(),
+            ];
+        } catch (\Exception $e) {
+            DB::rollBack();
+            abort(500, $e->getMessage());
+        }
+
+        return $response;
     }
-    public function store(Request $request) {
-        $validated = $request->validate([
-            'room_id' => 'required|integer|exists:rooms,id',
-            'user_id' => 'required|integer|exists:users,id',
-        ]);
-        Order::create($validated);
-        return response()->json(['message' => 'Order created'], 201);
+    public function detachDiscount(DiscountAttachRequest $request) {
+        $order = Order::find($request['order_id']);
+        $user = !empty($request['user_id']) ? User::find($request['user_id']) : Auth::user();
+        $discount = $request['discount_id'];
+
+        $this->orderService->checkOrderDiscount($order, $discount);
+
+        DB::beginTransaction();
+        try {
+            $order->discounts()->detach($discount);
+            $user->discounts()->attach($discount);
+            $this->orderService->updatePrice($order);
+            DB::commit();
+            $response = [
+                'order' => $order->load('discounts'),
+                'user_discounts' => $user->discounts()->get(),
+            ];
+        } catch (\Exception $e) {
+            DB::rollBack();
+            abort(500, $e->getMessage());
+        }
+
+        return $response;
     }
 }
