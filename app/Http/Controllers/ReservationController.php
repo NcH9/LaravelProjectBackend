@@ -17,6 +17,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use App\Models\Reservation;
 use Illuminate\Support\Facades\Storage;
@@ -136,9 +137,17 @@ class ReservationController extends Controller
                 : view('reservations.unavailable');
         }
 
-        $reservation = $this->reservationService->createReservation($data);
-        $this->orderService->create($data);
-        SendNewReservationsInfo::dispatch($reservation);
+        DB::beginTransaction();
+        try {
+            $reservation = $this->reservationService->createReservation($data);
+            $this->orderService->create($reservation->id, $data);
+            DB::commit();
+            DB::afterCommit(function () use ($reservation) {
+                SendNewReservationsInfo::dispatch($reservation);
+            });
+        } catch (\Exception $e) {
+            DB::rollBack();
+        }
 
         return request()->expectsJson()
             ? response()->json($reservation, 201)
@@ -157,6 +166,7 @@ class ReservationController extends Controller
 
         $data['floor'] = $this->reservationService->getFloor($data['room_id']);
         $data['days_amount'] = $this->reservationService->getDaysAmount($data['reservation_start'], $data['reservation_end']);
+        $data['room_number'] = $this->reservationService->getRoomNumber($data['room_id']);
 
         return request()->expectsJson()
             ? response()->json($data)

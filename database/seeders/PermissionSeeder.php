@@ -16,8 +16,8 @@ class PermissionSeeder extends Seeder
     public function run(): void
     {
         // $this->reservation_permissions();
-        // $this->asign_roles();
-        $this->asign_chas();
+         $this->asign_roles();
+//        $this->asign_chas();
     }
     private function reservation_permissions() {
         Permission::create(['name' => 'create reservations']);
@@ -34,7 +34,7 @@ class PermissionSeeder extends Seeder
     }
     private function asign_roles() {
         $users = User::all();
-        $admin = User::find(4);
+        $admin = User::find(1);
         $admin->assignRole('admin');
         foreach ($users as $user) {
             $user->assignRole('user');
