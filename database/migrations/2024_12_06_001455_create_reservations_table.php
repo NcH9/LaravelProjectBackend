@@ -18,6 +18,7 @@ return new class extends Migration
             $table->date('reservation_end');
             $table->foreignId('room_id')->constrained('rooms')->onDelete('cascade');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            $table->decimal('price');
         });
     }
 

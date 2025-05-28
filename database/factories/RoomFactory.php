@@ -16,13 +16,15 @@ class RoomFactory extends Factory
      */
     public function definition(): array
     {
-        $data = [
-            'status' => 'occupied',
-            'floor' => $this->faker->numberBetween(1, 10), // Этаж от 1 до 1
-        ];
-        $data['number'] = $data['floor'].'1';
-
-        return $data;
+//        $data = [
+//            'status' => 'occupied',
+//            'floor' => $this->faker->numberBetween(1, 10), // Этаж от 1 до 1
+//        ];
+//
+//
+//        $data['number'] = $data['floor'].'1';
+//
+//        return $data;
 //            [
 //            'status' => 'occupied',
 //            'floor' => $this->faker->numberBetween(1, 10), // Этаж от 1 до 10

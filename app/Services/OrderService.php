@@ -9,10 +9,10 @@ use Illuminate\Support\Facades\Auth;
 
 class OrderService
 {
-    public function create(array $data) {
+    public function create(int $reservationId, array $data) {
         Order::insert([
             'user_id' => $data['user_id'],
-            'reservation_id' => $data['reservation_id'],
+            'reservation_id' => $reservationId,
             'price' => $data['price'],
             'is_paid' => false,
         ]);

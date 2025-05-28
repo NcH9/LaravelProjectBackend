@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Room extends Model
 {
     use HasFactory;
+    public $timestamps = false;
+    protected $table = 'rooms';
     protected $fillable = ['status', 'floor', 'number'];
     public function reservations():HasMany
     {

@@ -46,14 +46,14 @@ class AuthController extends Controller
         }
         $tokenRecord = PersonalAccessToken::findToken($token);
 
-        if (!$tokenRecord || $tokenRecord->expires_at?->isPast()) {
+        if ($tokenRecord === null || $tokenRecord->expires_at?->isPast()) {
 
             return response()->json(['error' => 'Token expired'], 401);
         }
 
         return response()->json([
             'accessToken' => 'success',
-            'id' => auth()->id()
+            'id' => $tokenRecord?->tokenable?->id,
         ]);
     }
     public function login(LoginRequest $request):JsonResponse {

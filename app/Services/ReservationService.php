@@ -14,11 +14,11 @@ class ReservationService
 {
     public function getAllReservations(array $data):LengthAwarePaginator {
         $perPage = $data['perPage'] ?? 10;
-        return Reservation::with('user')->paginate($perPage);
+        return Reservation::with('user')->with('room')->paginate($perPage);
     }
     public function getReservationsForUser(int $userId, array $data):LengthAwarePaginator {
         $perPage = $data['perPage'] ?? 10;
-        return Reservation::with('user')->where('user_id', $userId)->paginate($perPage);
+        return Reservation::with('user')->where('user_id', $userId)->with('room')->paginate($perPage);
     }
     public function findRoom($startDate, $endDate):Room|int {
         $reservations = Reservation::
@@ -55,6 +55,9 @@ class ReservationService
         $endDate = new DateTime($reservationEnd);
 
         return $startDate->diff($endDate)->days;
+    }
+    public function getRoomNumber(int $roomId) {
+        return Room::find($roomId)?->number;
     }
     public function prepareData(array $data):array {
         $data['user_id'] = Auth::id();

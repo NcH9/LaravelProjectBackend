@@ -24,7 +24,7 @@ class ReservationStoreRequest extends FormRequest
         return [
             'reservation_start' => 'required|date|after_or_equal:today',
             'reservation_end' => 'required|date|after_or_equal:reservation_start',
-            'room_id' => 'required|integer|exists:room,id',
+            'room_id' => 'required|integer|exists:rooms,id',
         ];
     }
 }
