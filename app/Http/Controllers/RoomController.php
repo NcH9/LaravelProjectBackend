@@ -19,14 +19,10 @@ class RoomController extends Controller
         $this->updateRoomStatus();
 
         $validated = $request->validated();
-//        if (isset($validated['period'][0])) {
-            $start = isset($validated['period'][0]) ? $validated['period'][0]['start'] : null;
-            $end = isset($validated['period'][0]) ? $validated['period'][0]['end'] : null;
-//        $start = $data['period'][0]['start'];
-//        $end = $data['period'][0]['end'];
-//        return response()->json($request->all());
+        $start = isset($validated['period'][0]) ? $validated['period'][0]['start'] : null;
+        $end = isset($validated['period'][0]) ? $validated['period'][0]['end'] : null;
+
         if ($start !== null && $end !== null) {
-//            dd('hello');
             $startDate = Carbon::parse($start);
             $endDate = Carbon::parse($end);
             foreach ($rooms as $room) {
