@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\RoomIndexRequest;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -12,15 +13,20 @@ class RoomController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+    public function index(RoomIndexRequest $request)
     {
         $rooms = Room::with('reservations')->orderBy('floor')->get();
         $this->updateRoomStatus();
 
-        $start = $request->input('start', '');
-        $end = $request->input('end', '');
-
-        if ($start !== '' && $end !== '') {
+        $validated = $request->validated();
+//        if (isset($validated['period'][0])) {
+            $start = isset($validated['period'][0]) ? $validated['period'][0]['start'] : null;
+            $end = isset($validated['period'][0]) ? $validated['period'][0]['end'] : null;
+//        $start = $data['period'][0]['start'];
+//        $end = $data['period'][0]['end'];
+//        return response()->json($request->all());
+        if ($start !== null && $end !== null) {
+//            dd('hello');
             $startDate = Carbon::parse($start);
             $endDate = Carbon::parse($end);
             foreach ($rooms as $room) {
@@ -96,7 +102,7 @@ class RoomController extends Controller
     {
         //
         $validated = $request->validate([
-            'status_id' => 'integer',
+            'status' => 'sometimes|string',
             'floor' => 'integer|min:1',
         ]);
 
@@ -113,7 +119,7 @@ class RoomController extends Controller
                 return $currentTime->between($reservations->reservation_start, $reservations->reservation_end);
             });
 
-            $room->status_id = $isOccupied ? 1 : 2;
+            $room->status = $isOccupied ? 1 : 2;
             $room->save();
         }
 
