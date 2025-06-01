@@ -14,11 +14,11 @@ class ReservationService
 {
     public function getAllReservations(array $data):LengthAwarePaginator {
         $perPage = $data['perPage'] ?? 10;
-        return Reservation::with('user')->with('room')->paginate($perPage);
+        return Reservation::with('user')->with('order')->with('room')->paginate($perPage);
     }
     public function getReservationsForUser(int $userId, array $data):LengthAwarePaginator {
         $perPage = $data['perPage'] ?? 10;
-        return Reservation::with('user')->where('user_id', $userId)->with('room')->paginate($perPage);
+        return Reservation::with('user')->with('order')->where('user_id', $userId)->with('room')->paginate($perPage);
     }
     public function findRoom($startDate, $endDate):Room|int {
         $reservations = Reservation::
@@ -61,9 +61,9 @@ class ReservationService
     }
     public function prepareData(array $data):array {
         $data['user_id'] = Auth::id();
-        $data['room_id'] = !isset($data['room_id']) || $data['room_id'] === 0
+        $data['room_id'] = !isset($data['room_number']) || $data['room_number'] === 0
             ? $this->findRoom($data['reservation_start'], $data['reservation_end'])
-            : $data['room_id'];
+            : Room::where('number', $data['room_number'])->first()->id;
         $data['price'] = $this->countPrice(
             $data['room_id'],
             $data['reservation_start'],
@@ -77,7 +77,7 @@ class ReservationService
     }
 
     public function checkAvailability(array $data):bool {
-        $roomId = $data['room_id'];
+        $roomId = $room = Room::where('number', $data['room_number'])->first()->id;
         $startDate = $data['reservation_start'];
         $endDate = $data['reservation_end'];
 
@@ -97,7 +97,7 @@ class ReservationService
     }
 
     public function isRedactable(int $reservationId, array $data):bool {
-        $roomId = $data['room_id'];
+        $roomId = $room = Room::where('number', $data['room_number'])->first()->id;
         $startDate = $data['reservation_start'];
         $endDate = $data['reservation_end'];
 
@@ -121,8 +121,9 @@ class ReservationService
     }
 
     public function prepareDataForUpdate(array $data):array {
-        $data['price'] = $this->countPrice($data['room_id'], $data['reservation_start'], $data['reservation_end']);
-        $data['floor'] = $this->getFloor($data['room_id']);
+        $room = Room::where('number', $data['room_number'])->first();
+        $data['price'] = $this->countPrice($room->id, $data['reservation_start'], $data['reservation_end']);
+        $data['floor'] = $room->floor;
         $data['days_amount'] = $this->getDaysAmount($data['reservation_start'], $data['reservation_end']);
 
         return $data;

@@ -14,11 +14,11 @@ class Order extends Model
     {
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
-    public function reservation(): HasOne
+    public function reservation(): BelongsTo
     {
-        return $this->hasOne(Reservation::class, 'reservation_id', 'id');
+        return $this->belongsTo(Reservation::class);
     }
-    public function discounts(): belongsToMany
+    public function discount(): belongsToMany
     {
         return $this->belongsToMany(Discount::class, 'order_discount', 'order_id', 'discount_id');
     }

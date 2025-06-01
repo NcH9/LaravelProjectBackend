@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Models\Discount;
+use App\Models\Order;
+use App\Models\User;
 
 class DiscountService
 {
@@ -13,6 +15,10 @@ class DiscountService
     public function getById($id)
     {
         return Discount::find($id);
+    }
+    public function getUserDiscounts(?User $user)
+    {
+        return $user->discounts();
     }
     public function create($data)
     {
