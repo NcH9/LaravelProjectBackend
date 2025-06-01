@@ -19,6 +19,7 @@ Route::prefix('reservations')->middleware('auth:sanctum')->group(function () {
     Route::post('/{reservation}/edit', [ReservationController::class, 'edit']);
     Route::post('/generateReport', [ReservationController::class, 'generateReport']);
     Route::post('/{reservation}/confirmUpdate', [ReservationController::class, 'confirmUpdate']);
+    Route::get('/{reservation}', [ReservationController::class, 'show']);
     Route::put('/{reservation}', [ReservationController::class, 'update']);
 });
 

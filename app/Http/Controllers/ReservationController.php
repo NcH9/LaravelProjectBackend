@@ -3,35 +3,34 @@
 namespace App\Http\Controllers;
 
 use App\Enums\RoleEnum;
-use App\Http\Requests\ReservationRequest;
 use App\Http\Requests\Reservations\ReservationConfirmRequest;
 use App\Http\Requests\Reservations\ReservationIndexRequest;
+use App\Http\Requests\Reservations\ReservationRequest;
 use App\Http\Requests\Reservations\ReservationsShowReports;
 use App\Http\Requests\Reservations\ReservationStoreRequest;
 use App\Jobs\GeneratePdfReport;
 use App\Jobs\SendNewReservationsInfo;
 use App\Jobs\SendUpdateReservationsInfo;
+use App\Models\Reservation;
+use App\Services\DiscountService;
 use App\Services\OrderService;
 use App\Services\ReservationService;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
-use App\Models\Reservation;
 use Illuminate\Support\Facades\Storage;
-use Barryvdh\DomPDF\Facade\Pdf as PDF;
 
 class ReservationController extends Controller
 {
     public function __construct(
         protected ReservationService $reservationService,
         protected OrderService $orderService,
+        protected DiscountService $discountService,
     ) {}
-    /**
-     * Display a listing of the resource.
-     */
     public function index(ReservationIndexRequest $request):mixed
     {
         $data = $request->validated();
@@ -147,6 +146,7 @@ class ReservationController extends Controller
             });
         } catch (\Exception $e) {
             DB::rollBack();
+            abort(400, $e->getMessage());
         }
 
         return request()->expectsJson()
@@ -164,9 +164,8 @@ class ReservationController extends Controller
                 : view('reservations.unavailable');
         }
 
-        $data['floor'] = $this->reservationService->getFloor($data['room_id']);
+        $data['floor'] = $this->reservationService->getFloor(Room::where('room_number', $data['room_number'])->first()->id);
         $data['days_amount'] = $this->reservationService->getDaysAmount($data['reservation_start'], $data['reservation_end']);
-        $data['room_number'] = $this->reservationService->getRoomNumber($data['room_id']);
 
         return request()->expectsJson()
             ? response()->json($data)
@@ -183,14 +182,17 @@ class ReservationController extends Controller
             abort(403);
         }
 
+        $reservation->load('room')->load('order', 'order.discount');
+        $userDiscounts = $this->discountService->getUserDiscounts(Auth::user());
+
         return request()->expectsJson()
-            ? response()->json($reservation)
+            ? response()->json([
+                'reservation' => $reservation,
+                'userDiscounts' => $userDiscounts,
+            ])
             : view('reservations.show')->with('reservation', $reservation);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function confirmUpdate(ReservationRequest $request, Reservation $reservation)
     {
         if (Gate::denies('show-and-redact-reservation', $reservation)) {
