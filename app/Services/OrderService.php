@@ -6,21 +6,68 @@ use App\Models\Discount;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Stripe\Checkout\Session;
+use Stripe\Stripe;
 
 class OrderService
 {
     public function create(int $reservationId, array $data) {
-        Order::insert([
+        $order = Order::create([
             'user_id' => $data['user_id'],
             'reservation_id' => $reservationId,
             'price' => $data['price'],
             'is_paid' => false,
         ]);
+
+        $seasonalDiscounts = Discount::where('is_seasonal', true)->pluck('id');
+        $order->discounts()->attach($seasonalDiscounts);
+
+        $user = User::find($data['user_id']);
+        $discountIds = $user->discounts()->pluck('discounts.id');
+
+        $order->discounts()->attach($discountIds);
+        $user->discounts()->detach($discountIds);
+
+        $newPrice = $this->countDiscountedOrderPrice($order, $data['price']);
+        $order->price = $newPrice;
+        $order->save();
     }
-    public function update(array $data) {
-        $isPaid = !empty($data['is_paid']) ? $data['is_paid'] : false;
+    private function countDiscountedOrderPrice(Order $order, float $price) {
+        $priceReducedPercent = 0;
 
+        foreach ($order->discounts as $discount) {
+            $priceReducedPercent += $discount->percent;
+        }
 
+        if ($priceReducedPercent < 50) {
+            return $price/2;
+        }
+
+        return ($price*(100-$priceReducedPercent))/100;
+    }
+    public function processPayment(string $url, float $price, int $reservationId)
+    {
+        Stripe::setApiKey(env('STRIPE_SECRET'));
+
+        return Session::create([
+            'payment_method_types' => ['card'],
+            'line_items' => [[
+                'price_data' => [
+                    'currency' => 'uah',
+                    'unit_amount' => $price,
+                    'product_data' => [
+                        'name' => 'Payment of reservation №' . $reservationId,
+                    ],
+                ],
+                'quantity' => 1,
+            ]],
+            'metadata' => [
+                'reservation_id' => $reservationId,
+            ],
+            'mode' => 'payment',
+            'success_url' => $url . '?status=success',
+            'cancel_url' => $url . '?status=cancel',
+        ]);
     }
     public function checkOrderDiscount(Order $order, int $discountId) {
         if (!$discountId || !$order->discounts()->containg($discountId)) {

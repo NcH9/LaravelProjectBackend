@@ -16,7 +16,9 @@ class DiscountSaveRequest extends FormRequest
         return [
             'discount_id' => 'sometimes|exists:discounts,id',
             'name' => 'required|string',
-            'percent' => 'required|numeric'
+            'percent' => 'required|numeric|between:0,100',
+            'is_seasonal' => 'sometimes|boolean',
+            'loyalty_reward' => 'sometimes|boolean',
         ];
     }
 }

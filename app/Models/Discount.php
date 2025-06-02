@@ -7,7 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Discount extends Model
 {
-    protected $fillable = ['name', 'percent'];
+    public $timestamps = false;
+    protected $fillable = ['name', 'percent', 'is_seasonal', 'loyalty_reward'];
     public function users():belongsToMany
     {
         return $this->belongsToMany(User::class, 'discount_user', 'discount_id', 'user_id');

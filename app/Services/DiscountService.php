@@ -24,9 +24,8 @@ class DiscountService
     {
         Discount::create($data);
     }
-    public function update($id, $data)
+    public function update(Discount $discount, array $data)
     {
-        $discount = Discount::find($id);
         $discount->update($data);
     }
     public function delete($id)
