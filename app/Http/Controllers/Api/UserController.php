@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Models\User;
 
@@ -27,19 +28,14 @@ class UserController extends Controller
         return response()->json($user, 201);
     }
 
-    public function show($id)
+    public function show(User $user):JsonResponse
     {
-        $user = User::with('reservations')->find($id);
-        if (!$user) {
-            $user = User::find($id);
-        }
-        $user->load('roles');
+        $user->load('roles', 'discounts');
         return response()->json($user);
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, User $user)
     {
-        $user = User::findOrFail($id);
         $user->update($request->all());
 
         return response()->json($user);

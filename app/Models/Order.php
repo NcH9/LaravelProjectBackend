@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Order extends Model
 {
+    public $timestamps = false;
     protected $fillable = ['user_id', 'resevation_id', 'is_paid', 'price'];
     public function user(): BelongsTo
     {
@@ -18,6 +19,7 @@ class Order extends Model
     {
         return $this->belongsTo(Reservation::class);
     }
+
     public function discount(): belongsToMany
     {
         return $this->belongsToMany(Discount::class, 'order_discount', 'order_id', 'discount_id');

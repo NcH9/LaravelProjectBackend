@@ -15,6 +15,8 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->decimal('percent');
+            $table->boolean('is_seasonal')->default(true);
+            $table->boolean('loyalty_reward')->default(false);
         });
     }
 

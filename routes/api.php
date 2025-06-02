@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\RoomController;
+use \App\Http\Controllers\DiscountController;
 
 Route::post('/profile/updatePicture', [UserController::class, 'updatePicture'])->name('profile.updatePicture');
 Route::resource('rooms', RoomController::class);
@@ -26,7 +27,6 @@ Route::prefix('reservations')->middleware('auth:sanctum')->group(function () {
 
 Route::get('/reports', [ReservationController::class, 'showReports'])->name('reports.list');
 Route::apiResource('rooms', RoomController::class);
-//Route::get('rooms', [RoomController::class, 'index']);
 
 Route::apiResource('users', UserController::class);
 
@@ -38,8 +38,11 @@ Route::controller(AuthController::class)->group(function () {
     Route::get('/getuser', 'getCredentialsWithToken')->middleware('auth:sanctum');
 });
 
+Route::apiResource('discounts', DiscountController::class)->middleware('auth:sanctum');
 Route::controller(OrderController::class)->prefix('orders')->middleware('auth:sanctum')->group(function () {
     Route::post('/{order}/attach-discount', 'attachDiscount');
     Route::post('/{order}/detach-discount', 'detachDiscount');
+    Route::post('/{reservation}/process-payment', 'processPayment');
 });
+Route::post('/webhook/stripe', [StripeWebhookController::class, 'handle']);
 

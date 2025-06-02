@@ -25,22 +25,24 @@ class DiscountController extends Controller
             'data' => $discounts,
         ]);
     }
-    public function save(DiscountSaveRequest $request)
+    public function store(DiscountSaveRequest $request)
+    {
+        if (Gate::denies('is-manager-or-admin')) {
+            abort(403);
+        }
+        $this->discountService->create($request->validated());
+
+        return response()->json('created');
+    }
+    public function update(DiscountSaveRequest $request, Discount $discount)
     {
         if (Gate::denies('is-manager-or-admin')) {
             abort(403);
         }
 
-        if ($request->filled('discount_id')) {
-            $this->discountService->update($request);
+        $this->discountService->update($discount, $request->validated());
 
-            return response()->json('updated');
-
-        } else {
-            $this->discountService->create($request);
-
-            return response()->json('created');
-        }
+        return response()->json('updated');
     }
     public function delete(DiscountDeleteRequest $request)
     {
