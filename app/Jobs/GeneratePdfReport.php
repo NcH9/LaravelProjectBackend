@@ -7,7 +7,7 @@ use App\Models\Reservation;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
-use Storage;
+use \Illuminate\Support\Facades\Storage;
 
 class GeneratePdfReport implements ShouldQueue
 {
@@ -33,7 +33,7 @@ class GeneratePdfReport implements ShouldQueue
 
         $pdf = PDF::loadView('reports.reservations', ['reservations' => $reservations]);
 
-        $path = 'reports/reservations_report_' . now()->format('d.m.Y_H:i:s') . '.pdf';
+        $path = 'reports/reservations_report_' . now()->format('d.m.Y_H_i_s') . '.pdf';
         Storage::disk('public')->put($path, $pdf->output());
         broadcast(new ReportGenerated($path));
     }
