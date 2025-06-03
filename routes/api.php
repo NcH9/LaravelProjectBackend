@@ -25,7 +25,7 @@ Route::prefix('reservations')->middleware('auth:sanctum')->group(function () {
 });
 
 
-Route::get('/reports', [ReservationController::class, 'showReports'])->name('reports.list');
+Route::get('/reports', [ReservationController::class, 'showReports'])->middleware('auth:sanctum');
 Route::apiResource('rooms', RoomController::class);
 
 Route::apiResource('users', UserController::class);

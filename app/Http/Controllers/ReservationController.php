@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\RoleEnum;
+use App\Http\Requests\CreateReportRequest;
 use App\Http\Requests\Reservations\ReservationConfirmRequest;
 use App\Http\Requests\Reservations\ReservationIndexRequest;
 use App\Http\Requests\Reservations\ReservationRequest;
@@ -50,7 +51,7 @@ class ReservationController extends Controller
             ])
             : view('reservations.index')->with('reservations', $reservations);
     }
-    public function generateReport(ReservationStoreRequest $request):mixed {
+    public function generateReport(CreateReportRequest $request):mixed {
         if (Gate::denies('is-manager-or-admin')) {
             abort(403);
         }
@@ -111,14 +112,18 @@ class ReservationController extends Controller
         }
 
         if ($search == null) {
-            return view('reports.list')->with('reports', array_reverse($reportLinks));
+            return request()->expectsJson()
+                ? response()->json($reportLinks)
+                : view('reports.list')->with('reports', $reportLinks);
         }
 
         $reports = array_filter(array_reverse($reportLinks), function ($report) use ($search) {
             return str_contains(strtolower($report['name']), strtolower($search)) !== false;
         });
 
-        return view('reports.list')->with('reports', $reports);
+        return request()->expectsJson()
+            ? response()->json($reports)
+            : view('reports.list')->with('reports', $reports);
     }
     public function create() {
         return view('reservations.create');
