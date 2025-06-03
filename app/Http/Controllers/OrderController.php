@@ -35,6 +35,12 @@ class OrderController extends Controller
             return response()->json(['message' => 'Order is already paid'], 400);
         }
 
+        $this->orderService->applyDiscounts($order, [
+            "user_id" => $reservation->id,
+            "price" => $reservation->price,
+        ]);
+
+
         // The project is not commercial, so payment does not process fully
         $user = User::find($reservation->user_id);
         DB::beginTransaction();

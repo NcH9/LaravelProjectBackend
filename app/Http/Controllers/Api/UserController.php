@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Discount;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Models\User;
@@ -30,8 +31,15 @@ class UserController extends Controller
 
     public function show(User $user):JsonResponse
     {
-        $user->load('roles', 'discounts');
-        return response()->json($user);
+        $user->load('roles', 'discounts', 'reservations.order', 'reservations.room');
+        $allActiveDiscounts = Discount::where('is_active', 1)->get();
+        $seasonalDiscounts = $allActiveDiscounts->where('is_seasonal', 1);
+
+        return response()->json([
+            "user" => $user,
+            "all_active_discounts" => $allActiveDiscounts,
+            "seasonal_discounts" => $seasonalDiscounts,
+        ]);
     }
 
     public function update(Request $request, User $user)

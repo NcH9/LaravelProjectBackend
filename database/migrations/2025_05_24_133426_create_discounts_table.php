@@ -17,6 +17,7 @@ return new class extends Migration
             $table->decimal('percent');
             $table->boolean('is_seasonal')->default(true);
             $table->boolean('loyalty_reward')->default(false);
+            $table->boolean('isActive')->default(true);
         });
     }
 

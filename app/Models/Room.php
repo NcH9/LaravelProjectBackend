@@ -12,7 +12,7 @@ class Room extends Model
     use HasFactory;
     public $timestamps = false;
     protected $table = 'rooms';
-    protected $fillable = ['status', 'floor', 'number'];
+    protected $fillable = ['status', 'floor', 'number', 'price'];
     public function reservations():HasMany
     {
         return $this->hasMany(Reservation::class);

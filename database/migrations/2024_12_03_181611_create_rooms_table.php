@@ -18,6 +18,7 @@ return new class extends Migration
             $table->enum('status', array_column(RoomStatusEnum::cases(), 'value'))
                 ->default(RoomStatusEnum::AVAILABLE);
             $table->integer('floor');
+            $table->decimal('price');
         });
     }
 

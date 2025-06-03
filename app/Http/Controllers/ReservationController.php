@@ -123,9 +123,6 @@ class ReservationController extends Controller
     public function create() {
         return view('reservations.create');
     }
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(ReservationStoreRequest $request)
     {
         $data = $this->reservationService->prepareData($request->validated());
@@ -164,25 +161,20 @@ class ReservationController extends Controller
                 : view('reservations.unavailable');
         }
 
-        $data['floor'] = $this->reservationService->getFloor(Room::where('room_number', $data['room_number'])->first()->id);
+        $data['floor'] = $this->reservationService->getFloor($data['room_id']);
         $data['days_amount'] = $this->reservationService->getDaysAmount($data['reservation_start'], $data['reservation_end']);
 
         return request()->expectsJson()
             ? response()->json($data)
             : view('reservations.confirm')->with('reservation', $data);
     }
-
-
-    /**
-     * Display the specified resource.
-     */
     public function show(Reservation $reservation)
     {
         if (Gate::denies('show-and-redact-reservation', $reservation)) {
             abort(403);
         }
 
-        $reservation->load('room')->load('order', 'order.discount');
+        $reservation->load('room')->load('order', 'order.discounts');
         $userDiscounts = $this->discountService->getUserDiscounts(Auth::user());
 
         return request()->expectsJson()
@@ -197,6 +189,10 @@ class ReservationController extends Controller
     {
         if (Gate::denies('show-and-redact-reservation', $reservation)) {
             abort(403);
+        }
+
+        if($reservation->order->is_paid === true) {
+            return response()->json(['error' => 'Order is already paid, can not be changed'], 400);
         }
 
         $data = $this->reservationService->prepareDataForUpdate($request->validated());
@@ -215,6 +211,10 @@ class ReservationController extends Controller
     {
         if (Gate::denies('show-and-redact-reservation', $reservation)) {
             abort(403);
+        }
+
+        if($reservation->order->is_paid === true) {
+            return response()->json(['error' => 'Order is already paid, can not be changed'], 400);
         }
 
         $data = $this->reservationService->prepareDataForUpdate($request->validated());
@@ -239,9 +239,6 @@ class ReservationController extends Controller
 
         return view('reservations.update')->with('reservation', $reservation);
     }
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Reservation $reservation):RedirectResponse|JsonResponse
     {
         if (Gate::denies('show-and-redact-reservation', $reservation)) {
