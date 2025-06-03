@@ -41,6 +41,11 @@ class RoomController extends Controller
                 $room->calculatedStatus = $room->status === 'occupied' ? 'Occupied' : 'Available';
             }
         }
+
+        foreach ($rooms as $room) {
+            $room->pricePerWeek = round(($room->price * 7 * 0.9), 2);
+        }
+
         $groupedRooms = $rooms->groupBy('floor');
 
         if (request()->expectsJson()) {
@@ -56,22 +61,16 @@ class RoomController extends Controller
         $room = Room::find($roomId);
         return $room->floor;
     }
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'status_id' => 'required|integer',
-            'floor' => 'required|integer|min:1|max:10',
+            'status' => 'required|in:available,occupied',
+            'floor' => 'required|integer|min:1|max:5',
+            'price' => 'required|numeric|min:0',
         ]);
         $room = Room::create($validated);
         return response()->json($room, 200);
     }
-
-    /**
-     * Display the specified resource.
-     */
     public function show(Room $room)
     {
         $room->load('status');
@@ -90,10 +89,6 @@ class RoomController extends Controller
         }
         return view('rooms.show')->with('room', $room);
     }
-
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, Room $room)
     {
         //
@@ -121,13 +116,8 @@ class RoomController extends Controller
 
         // return view('rooms.index', ['rooms' => $rooms]);
     }
-
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Room $room)
     {
-        //
         $room->delete();
         return response()->json(['message' => 'Room deleted successfully']);
     }

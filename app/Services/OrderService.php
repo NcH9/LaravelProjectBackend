@@ -19,14 +19,22 @@ class OrderService
             'is_paid' => false,
         ]);
 
+        $this->applyDiscounts($order, $data);
+    }
+    public function applyDiscounts(Order $order, array $data) {
         $seasonalDiscounts = Discount::where('is_seasonal', true)->pluck('id');
-        $order->discounts()->attach($seasonalDiscounts);
+        $missingDiscounts = $seasonalDiscounts->diff($order->discounts->pluck('id'));
+        if ($missingDiscounts->isNotEmpty()) {
+            $order->discounts()->syncWithoutDetaching($missingDiscounts);
+        }
 
         $user = User::find($data['user_id']);
-        $discountIds = $user->discounts()->pluck('discounts.id');
+        $discountId = $user->discounts()->pluck('discounts.id')->first();
 
-        $order->discounts()->attach($discountIds);
-        $user->discounts()->detach($discountIds);
+        if (!$order->discounts->contains($discountId)) {
+            $order->discounts()->attach($discountId);
+            $user->discounts()->detach($discountId);
+        }
 
         $newPrice = $this->countDiscountedOrderPrice($order, $data['price']);
         $order->price = $newPrice;

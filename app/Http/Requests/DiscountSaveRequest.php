@@ -19,6 +19,7 @@ class DiscountSaveRequest extends FormRequest
             'percent' => 'required|numeric|between:0,100',
             'is_seasonal' => 'sometimes|boolean',
             'loyalty_reward' => 'sometimes|boolean',
+            'is_active' => 'sometimes|boolean',
         ];
     }
 }

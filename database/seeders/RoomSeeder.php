@@ -20,11 +20,13 @@ class RoomSeeder extends Seeder
             $floor = floor($i/10)+1;
             $roomsOnFloor = Room::where('floor', $floor)->count();
             $number = $floor.$roomsOnFloor;
+            $price = 500*(1+(($floor-1)*(0.125)));
 
             Room::create([
                 'status' => RoomStatusEnum::AVAILABLE,
                 'floor' => $floor,
                 'number' => $number,
+                'price' => $price
             ]);
         }
     }

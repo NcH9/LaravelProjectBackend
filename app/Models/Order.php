@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 class Order extends Model
 {
     public $timestamps = false;
-    protected $fillable = ['user_id', 'resevation_id', 'is_paid', 'price'];
+    protected $fillable = ['user_id', 'reservation_id', 'is_paid', 'price'];
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id', 'id');
@@ -20,7 +20,7 @@ class Order extends Model
         return $this->belongsTo(Reservation::class);
     }
 
-    public function discount(): belongsToMany
+    public function discounts(): belongsToMany
     {
         return $this->belongsToMany(Discount::class, 'order_discount', 'order_id', 'discount_id');
     }
