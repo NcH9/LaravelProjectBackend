@@ -43,11 +43,11 @@ class OrderService
     private function countDiscountedOrderPrice(Order $order, float $price) {
         $priceReducedPercent = 0;
 
-        foreach ($order->discounts as $discount) {
+        foreach ($order->discounts()->get() as $discount) {
             $priceReducedPercent += $discount->percent;
         }
 
-        if ($priceReducedPercent < 50) {
+        if ($priceReducedPercent > 50) {
             return $price/2;
         }
 

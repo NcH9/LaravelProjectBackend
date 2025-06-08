@@ -36,7 +36,7 @@ class OrderController extends Controller
         }
 
         $this->orderService->applyDiscounts($order, [
-            "user_id" => $reservation->id,
+            "user_id" => $reservation->user_id,
             "price" => $reservation->price,
         ]);
 
